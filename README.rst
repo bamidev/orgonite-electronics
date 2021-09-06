@@ -23,9 +23,9 @@ Also, if you programmer is not at `/dev/ttyUSB0`, you need to set `DEV_PATH` als
 
 An example of building and flashing the LED-driving chip with and stk500 programmer that is accessible on `/dev/ttyUSB1`:
 ```
-make
-sudo make setfuses PROGRAMMER_ID=stk500v2 DEV_PATH=/dev/ttyUSB1
-sudo make flash PROGRAMMER_ID=stk500v2 DEV_PATH=/dev/ttyUSB1
+	make
+	sudo make setfuses PROGRAMMER_ID=stk500v2 DEV_PATH=/dev/ttyUSB1
+	sudo make flash PROGRAMMER_ID=stk500v2 DEV_PATH=/dev/ttyUSB1
 ```
 
 Checking the random field
