@@ -308,7 +308,7 @@ void setup_clock() {
 #ifndef GEN_BITMAP
 	cli();		// Disable global interrupts
 	TCCR1B |= 1<<WGM12 | 1<<CS10;	//Put Timer/Counter1 in CTC mode, with no prescaling
-	OCR1A = 1600;	// Run every 1/10000 of a second. This is just enough to execute the PWM simulating code at a frequency that won't really be seen by the eye.
+	OCR1A = 1599;	// Run every 1/10000 of a second. This is just enough to execute the PWM simulating code at a frequency that won't really be seen by the eye.
 	
 	TIMSK1 |= 1<<OCIE1A;	//enable timer compare interrupt
 	sei();	//Enable global interrupts
