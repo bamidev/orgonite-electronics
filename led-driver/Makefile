@@ -49,7 +49,13 @@ flash: $(OUT_FILE)
 	avrdude -p $(CHIP_ID) -c $(PROGRAMMER_ID) -P $(DEV_PATH) -U flash:w:$(OUT_FILE)
 
 setfuses:
-	avrdude -p $(CHIP_ID) -c $(PROGRAMMER_ID) -P $(DEV_PATH) -U lfuse:w:0xFF:m
+# Sets the fuses to:
+# * Use external crystal oscillator as clock source
+# * Use brown out detection circuit for 4.3V
+# * Slow startup time.
+# * Clock output pin
+	avrdude -p $(CHIP_ID) -c $(PROGRAMMER_ID) -P $(DEV_PATH) -U lfuse:w:0xAF:m
+	avrdude -p $(CHIP_ID) -c $(PROGRAMMER_ID) -P $(DEV_PATH) -U hfuse:w:0xD9:m
 
 bitmap: $(BMP_OBJ_FILES)
 	$(BMP_CC) $(CFLAGS) -DGEN_BITMAP -o bin/gen-bitmap $(BMP_OBJ_FILES) -lm
