@@ -2,9 +2,9 @@ import random
 
 
 
-MAX_VAL = 32
-WIDTH = 4
-HEIGHT = 4
+MAX_VAL = 255
+WIDTH = 24
+HEIGHT = WIDTH
 
 
 def value_to_color(value):
@@ -63,4 +63,4 @@ print('};')
 total_r = sum([x[0] for x in rgbs])
 total_g = sum([x[1] for x in rgbs])
 total_b = sum([x[2] for x in rgbs])
-assert (max((total_r, total_g, total_b)) - min((total_r, total_g, total_b))) < 3, "Colors not evenly distributed: R=%i, G=%i, B=%i" % (total_r, total_g, total_b)
+#assert (max((total_r, total_g, total_b)) - min((total_r, total_g, total_b))) < 3, "Colors not evenly distributed: R=%i, G=%i, B=%i" % (total_r, total_g, total_b)
