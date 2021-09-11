@@ -96,7 +96,7 @@ uint8_t approximate(
 void coord_2_color(uint16_t x, uint16_t y, volatile struct Rgb* color) {
 	coord_2_color_layer(x/8, y/8, color);
 	coord_2_color_variation(x/4, y/4, 1, 1, color);
-	coord_2_color_variation(x, y, 16, 3, color);
+	coord_2_color_variation(x/2, y/2, 8, 3, color);
 }
 
 void coord_2_color_layer(uint16_t x, uint16_t y, volatile struct Rgb* color) {
@@ -162,9 +162,9 @@ void coord_2_color_lowres(uint16_t x, uint16_t y, volatile struct Rgb* color) {
 	color->b >>= 3;
 }
 
-/// Same as `coord_2_color_lowres`, except it only reliably sets the red and green parts of the color.
+/// Same as `coord_2_color_lowres`, except it only downscales the red and blue part.
 void coord_2_color_lowres_rb(uint16_t x, uint16_t y, volatile struct Rgb* color) {
-	coord_2_color_layer(x/2, y/2, color);	// TODO: Only calculate red and blue...
+	coord_2_color(x, y, color);	// TODO: Only calculate red and blue...
 
 	color->r >>= 3;
 	color->b >>= 3;
@@ -318,17 +318,17 @@ void setup_clock() {
 // Sets all used pins to outgoing and high
 void setup_io_pins() {
 #ifndef GEN_BITMAP
-	// Port B pin 0 through 5:
+	// Port B pin 1, 2, 4 & 5:
 	DDRB = 0xFF;
-	PORTB = 0b11011;
+	PORTB = 0b110110;
 
 	// Port C pins 0,1,2,5,6
 	DDRC = 0xFF;
 	PORTC = 0b1111111;
 
-	// Port D pins 5 & 6 are going to be used for PWM, but they need to be turned to 0 in order for that to work...
+	// Port D pins 3, 5 & 6 are going to be used for PWM, but they need to be turned to 0 in order for that to work...
 	DDRD = 0xFF;
-	PORTD = 0b10011111;
+	PORTD = 0b100;
 #endif
 }
 
@@ -362,11 +362,11 @@ void set_center_g(uint8_t level) {
 }
 
 void set_center_b(uint8_t level) {
-	set_timer2_pwma_value(level);
+	set_timer2_pwmb_value(level);
 }
 
 void set_corner_tl_g(uint8_t level) {
-	set_timer2_pwmb_value(level);
+	set_timer2_pwma_value(level);
 }
 
 void set_timer0_pwma_value(uint8_t val) {
