@@ -24,8 +24,8 @@
 
 typedef unsigned char uint8_t;
 
-const uint16_t X_MAX = RANDOM_FIELD_WIDTH*FIELD_RES;
-const uint16_t Y_MAX = RANDOM_FIELD_HEIGHT*FIELD_RES;
+const uint16_t X_MAX = RANDOM_FIELD_WIDTH*FIELD_RES*8;
+const uint16_t Y_MAX = RANDOM_FIELD_HEIGHT*FIELD_RES*8;
 
 
 
