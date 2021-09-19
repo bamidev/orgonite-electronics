@@ -32,9 +32,9 @@ const uint16_t Y_MAX = RANDOM_FIELD_HEIGHT*FIELD_RES;
 uint8_t pwm_step = 0;
 volatile uint16_t movement_step = 0;
 // LED's:
-struct Rgb center = {0xff,0xff,0xff};
-volatile struct Rgb corner_tl = {0xff,0xff,0xff}, corner_tr = {0xff,0xff,0xff}, corner_bl = {0xff,0xff,0xff}, corner_br = {0xff,0xff,0xff};
-
+struct Rgb center = {0,0,0};
+volatile struct Rgb corner_tl = {0,0,0}, corner_tr = {0,0,0}, corner_bl = {0,0,0}, corner_br = {0,0,0};
+struct Rgb corner_tl_tmp, corner_tr_tmp, corner_bl_tmp, corner_br_tmp;
 
 
 void apply_variation_color(volatile uint8_t* base, uint8_t variation, uint8_t orders_down);
@@ -164,9 +164,10 @@ void coord_2_color_lowres(uint16_t x, uint16_t y, volatile struct Rgb* color) {
 
 /// Same as `coord_2_color_lowres`, except it only downscales the red and blue part.
 void coord_2_color_lowres_rb(uint16_t x, uint16_t y, volatile struct Rgb* color) {
-	coord_2_color(x, y, color);	// TODO: Only calculate red and blue...
+	coord_2_color(x, y, color);
 
 	color->r >>= 3;
+	// Green stays an 8-bit value, since it is consumed by an true-PWM pin anyway.
 	color->b >>= 3;
 }
 
@@ -185,7 +186,7 @@ int main() {
 	uint32_t space = 0;
 
 	while (1) {
-		// Approximately every tenth of a second:
+		// Approximately every fourth of a second:
 		if (movement_step >= 5000) {
 			movement_step -= 5000;
 
@@ -200,8 +201,8 @@ int main() {
 			}
 			
 
-			uint16_t tl_x = 64 <= x ? x - 64 : (X_MAX - 64 - x);
-			uint16_t tl_y = 64 <= y ? y - 64 : (Y_MAX - 64 - y);
+			uint16_t tl_x = 64 <= x ? (x - 64) : (X_MAX - 64 + x);
+			uint16_t tl_y = 64 <= y ? (y - 64) : (Y_MAX - 64 + y);
 			uint16_t br_x = x + 64;
 			uint16_t br_y = y + 64;
 
@@ -230,8 +231,8 @@ int main() {
 // When compiling with `GEN_BITMAP` set, compiles an executable that generates a bitmap file of the color field that the LED-driver uses.
 int main() {
 	// Dimensions
-    int32_t width = X_MAX*2;
-    int32_t height = Y_MAX*2;
+    int32_t width = X_MAX;
+    int32_t height = Y_MAX;
     uint16_t bitcount = 24;//<- 24-bit bitmap
 
     // Width with padding
@@ -308,7 +309,7 @@ void setup_clock() {
 #ifndef GEN_BITMAP
 	cli();		// Disable global interrupts
 	TCCR1B |= 1<<WGM12 | 1<<CS10;	//Put Timer/Counter1 in CTC mode, with no prescaling
-	OCR1A = 1599;	// Run every 1/10000 of a second. This is just enough to execute the PWM simulating code at a frequency that won't really be seen by the eye.
+	OCR1A = 799;	// Run every 1/20000 of a second. This is just enough to execute the PWM simulating code at a frequency that won't really be seen by the eye.
 	
 	TIMSK1 |= 1<<OCIE1A;	//enable timer compare interrupt
 	sei();	//Enable global interrupts
@@ -416,28 +417,21 @@ uint8_t portb = 0, portc = 0, portd = 0;
 
 // Timer 1 comparator A interrupt:
 ISR(TIMER1_COMPA_vect)
-{	
-	// Every PWM_RESOLUTION steps, turn all colors which are not 0 on.
-	if (pwm_step == 0) {
-		portb = 0;
-		portc = 0;
-		portd = 0;
-	}
-	
-	if (corner_tl.r <= pwm_step)	portb |= 1<<1;
-	if (corner_tl.b <= pwm_step)	portb |= 1<<2;
+{
+	if (corner_tl_tmp.r <= pwm_step)	portb |= 1<<1;
+	if (corner_tl_tmp.b <= pwm_step)	portb |= 1<<2;
 
-	if (corner_tr.r <= pwm_step)	portb |= 1<<4;
-	if (corner_tr.g <= pwm_step)	portb |= 1<<5;
-	if (corner_tr.b <= pwm_step)	portc |= 1<<0;
+	if (corner_tr_tmp.r <= pwm_step)	portb |= 1<<4;
+	if (corner_tr_tmp.g <= pwm_step)	portb |= 1<<5;
+	if (corner_tr_tmp.b <= pwm_step)	portc |= 1<<0;
 
-	if (corner_bl.r <= pwm_step)	portc |= 1<<1;
-	if (corner_bl.g <= pwm_step)	portc |= 1<<2;
-	if (corner_bl.b <= pwm_step)	portc |= 1<<3;
+	if (corner_bl_tmp.r <= pwm_step)	portc |= 1<<1;
+	if (corner_bl_tmp.g <= pwm_step)	portc |= 1<<2;
+	if (corner_bl_tmp.b <= pwm_step)	portc |= 1<<3;
 
-	if (corner_br.r <= pwm_step)	portc |= 1<<4;
-	if (corner_br.g <= pwm_step)	portc |= 1<<5;
-	if (corner_br.b <= pwm_step)	portd |= 1<<2;
+	if (corner_br_tmp.r <= pwm_step)	portc |= 1<<4;
+	if (corner_br_tmp.g <= pwm_step)	portc |= 1<<5;
+	if (corner_br_tmp.b <= pwm_step)	portd |= 1<<2;
 
 	// Make the changes effective
 	PORTB = portb;
@@ -446,7 +440,19 @@ ISR(TIMER1_COMPA_vect)
 		
 	// Increment steps	
 	pwm_step += 1;
-	if (pwm_step == (PWM_RESOLUTION-1))	pwm_step = 0;
+	if (pwm_step == (PWM_RESOLUTION-1))	{
+		pwm_step = 0;
+
+		portb = 0;
+		portc = 0;
+		portd = 0;
+
+		// Take a copy of the color data to prevent colors changing mid-cycle and thereby theoretically causing possible flashes.
+		corner_tl_tmp = corner_tl;
+		corner_tr_tmp = corner_tr;
+		corner_bl_tmp = corner_bl;
+		corner_br_tmp = corner_br;
+	}
 
 	movement_step += 1;
 }
