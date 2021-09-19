@@ -13,7 +13,7 @@ DEV_PATH := /dev/ttyUSB0
 # Other Configurations #
 ########################
 # For setting CHIP_ID, see https://gcc.gnu.org/onlinedocs/gcc/AVR-Options.html
-CHIP_ID := attiny2313
+CHIP_ID := attiny45
 # The clock speed of the chip.
 CLOCK_SPEED := 16000000
 # The compiler command to use.

@@ -14,32 +14,38 @@ void transmit(uint8_t data);
 
 
 
+volatile uint32_t step = 0;
+
+
+
 // Startup code
 void initialize() {
 	setup_usart();
-	setup_clock();
 	setup_io_pins();
+	setup_clock();
 }
 
 void setup_clock() {
 	cli();		// Disable global interrupts
-	TCCR1B |= 1<<WGM12 | 1<<CS10;	//Put Timer/Counter1 in CTC mode, with no prescaling
+	TCCR1 = 1<<CTC1 | 0<<CS13 | 0<<CS12 | 0<<CS11 | 1<<CS10;	//Put Timer/Counter1 in CTC mode, with no prescaling
 
-	// 16000000/7.83 is the amount of cycles to execute to fire at 7.83Hz (the Schumann resonance).
-	// 16000000/7.83/63857 is approx. 31.9998
-	// Therefor, approx. 63857*32 cycles constitues to one interval for the Schumann resonance.
-	// (63857*32)/(16000000/7.83) is approx 1.0000006
-	// So that gives us a deviation of approx. 0,00006% if we interrupt every 63857 cycles, and switch at the 32th interrupt.
-	OCR1A = 63857-1;
+	// The chip uses an external clock source of 16Mhz.
+	// 16000000/7.83 is the amount of cycles to run endure one interval of 7.83Hz (the Schumann resonance).
+	// 16000000/7.83/60 is approx. 34057.
+	// Therefor, approx. 34057*60 cycles constitues to one interval for the Schumann resonance.
+	// (34057*60)/(16000000/7.83) is approx 0.999999, so that gives us a deviation of about 0,0001%.
+	// For some reason, the timer doesn't work when going too fast (e.g. 32 cycles).
+	// So we stick with something like 60 cycles, which is still more than accurate enough.
+	OCR1C = 60-1;
 	
-	TIMSK |= 1<<OCIE1A;	//enable timer compare interrupt
-	sei();	//Enable global interrupts
+	TIMSK |= 1<<OCIE1A;	// Enable timer compare interrupt
+	sei();	// Enable global interrupts
 }
 
-// Sets up the pins used
+/// Sets up the pins used
 void setup_io_pins() {
 	// Port B pin 0 & 1:
-	DDRB = 0xFF;
+	DDRB = 0b11;
 	PORTB = 0b01;
 }
 
@@ -65,10 +71,17 @@ void transmit(uint8_t data) {
 
 
 int main() {
+	initialize();
 
 	// Do nothing.
 	// Only the timer does what we need.
-	while (1) {}
+	while (1) {
+		if (step >= 34057) {
+			PORTB ^= 0b11;
+
+			step -= 34057;
+		}
+	}
 
 	return 0;
 }
@@ -76,15 +89,6 @@ int main() {
 
 
 // Timer 1 comparator A interrupt:
-uint8_t step = 0;
-ISR(TIMER1_COMPA_vect)
-{	
+ISR(TIMER1_COMPA_vect) {	
 	step += 1;
-
-	if (step == 32) {
-		step = 0;
-
-		// Switch the on/off status of both pin 0 & 1 of port B on step 32.
-		PORTB ^= 0b11;
-	}
 }
