@@ -30,13 +30,13 @@ void setup_clock() {
 	TCCR1 = 1<<CTC1 | 0<<CS13 | 0<<CS12 | 0<<CS11 | 1<<CS10;	//Put Timer/Counter1 in CTC mode, with no prescaling
 
 	// The chip uses an external clock source of 16Mhz.
-	// 16000000/7.83 is the amount of cycles to run endure one interval of 7.83Hz (the Schumann resonance).
-	// 16000000/7.83/60 is approx. 34057.
-	// Therefor, approx. 34057*60 cycles constitues to one interval for the Schumann resonance.
+	// 16000000/7.83/2 is the amount of cycles to run endure one half interval of 7.83Hz (the Schumann resonance).
+	// 16000000/7.83/2/73 is approx. 13996
+	// Therefor, approx. 13996*74 cycles constitues to one interval for the Schumann resonance.
 	// (34057*60)/(16000000/7.83) is approx 0.999999, so that gives us a deviation of about 0,0001%.
 	// For some reason, the timer doesn't work when going too fast (e.g. 32 cycles).
-	// So we stick with something like 60 cycles, which is still more than accurate enough.
-	OCR1C = 60-1;
+	// So we stick with something like at least 60 cycles, which is still more than accurate enough.
+	OCR1C = 73-1;
 	
 	TIMSK |= 1<<OCIE1A;	// Enable timer compare interrupt
 	sei();	// Enable global interrupts
@@ -76,10 +76,10 @@ int main() {
 	// Do nothing.
 	// Only the timer does what we need.
 	while (1) {
-		if (step >= 34057) {
+		if (step >= 13996) {
 			PORTB ^= 0b11;
 
-			step -= 34057;
+			step -= 13996;
 		}
 	}
 
